@@ -6,42 +6,49 @@ ARGV=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -t | --set-tag)
-            if [ "$2" ]; then
-                SET_TAG="$2"
-            else
+        -r | --random)
+            RANDOM=1
+            ;;
+        --get-from-file)
+            if ! [ "$2" ]; then
                 echo "$1 requires an argument"
                 exit 1
             fi
+            GET_FROM_FILE="$(pwd)/$2"
+            shift
+            ;;
+        -t | --set-tag)
+            if ! [ "$2" ]; then
+                echo "$1 requires an argument"
+                exit 1
+            fi
+            SET_TAG="$2"
             shift
             ;;
         --get)
-            if [ "$2" ]; then
-                GET="$2"
-            else
+            if ! [ "$2" ]; then
                 echo "$1 requires an argument"
                 exit 1
             fi
+            GET="$2"
             shift
             ;;
         -h | --help)
             ;;
         -e | --exclude)
-            if [ "$2" ]; then
-                EXCLUDE="$2"
-            else
+            if ! [ "$2" ]; then
                 echo "$1 requires an argument"
                 exit 1
             fi
+            EXCLUDE="$2"
             shift
             ;;
         -i | --include)
-            if [ "$2" ]; then
-                INCLUDE="$2"
-            else
+            if ! [ "$2" ]; then
                 echo "$1 requires an argument"
                 exit 1
             fi
+            INCLUDE="$2"
             shift
             ;;
         *)
@@ -53,18 +60,35 @@ done
 
 cd "$DIR"
 
-if [ "$GET" ]; then
-    if ! [ "$SET_TAG" ]; then
-        echo "--get requires --set-tag"
+download () {
+    if ! [ "$1" ]; then
+        echo "Download requires a url"
+        exit 1
+    fi
+    if ! [ "$2" ]; then
+        echo "Download requires tags"
         exit 1
     fi
     FILE="$(date +"%s").m4a"
-    yt-dlp "$GET" --extract-audio --format "ba[ext=m4a]" -o "$FILE"
+    yt-dlp "$1" --extract-audio --format "ba[ext=m4a]" -o "$FILE"
     if ! [ "$?" ]; then
         echo "something went wrong"
         exit 1
     fi
-    ficor --add-file "$FILE" -t "$SET_TAG" --set-info "$GET"
+    ficor --add-file "$FILE" -t "$2" --set-info "$1"
+}
+
+if [ "$GET_FROM_FILE" ]; then
+    while read -r LINE; do
+        set -- $LINE
+        download $1 $2
+    done <"$GET_FROM_FILE"
+elif [ "$GET" ]; then
+    if ! [ "$SET_TAG" ]; then
+        echo "--get requires --set-tag"
+        exit 1
+    fi
+    download "$GET" "$SET_TAG"
 else
     CMD="ficor"
     if [ "$INCLUDE" ]; then
@@ -72,6 +96,9 @@ else
     fi
     if [ "$EXCLUDE" ]; then
         CMD="$CMD --exclude $EXCLUDE"
+    fi
+    if [ "$RANDOM" ]; then
+        CMD="$CMD | sort -R"
     fi
     mpv $(eval "$CMD")
 fi
