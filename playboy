@@ -7,7 +7,7 @@ ARGV=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         -r | --random)
-            RANDOM=1
+            RANDOMIZE=1
             ;;
         --get-from-file)
             if ! [ "$2" ]; then
@@ -97,7 +97,7 @@ else
     if [ "$EXCLUDE" ]; then
         CMD="$CMD --exclude $EXCLUDE"
     fi
-    if [ "$RANDOM" ]; then
+    if [ "$RANDOMIZE" ]; then
         CMD="$CMD | sort -R"
     fi
     mpv $(eval "$CMD")
