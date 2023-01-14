@@ -1,0 +1,77 @@
+#! /bin/sh
+
+DIR="$HOME/Music"
+
+ARGV=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -t | --set-tag)
+            if [ "$2" ]; then
+                SET_TAG="$2"
+            else
+                echo "$1 requires an argument"
+                exit 1
+            fi
+            shift
+            ;;
+        --get)
+            if [ "$2" ]; then
+                GET="$2"
+            else
+                echo "$1 requires an argument"
+                exit 1
+            fi
+            shift
+            ;;
+        -h | --help)
+            ;;
+        -e | --exclude)
+            if [ "$2" ]; then
+                EXCLUDE="$2"
+            else
+                echo "$1 requires an argument"
+                exit 1
+            fi
+            shift
+            ;;
+        -i | --include)
+            if [ "$2" ]; then
+                INCLUDE="$2"
+            else
+                echo "$1 requires an argument"
+                exit 1
+            fi
+            shift
+            ;;
+        *)
+            ARGV+=("$1") # save positional arg
+            ;;
+    esac
+    shift
+done
+
+cd "$DIR"
+
+if [ "$GET" ]; then
+    if ! [ "$SET_TAG" ]; then
+        echo "--get requires --set-tag"
+        exit 1
+    fi
+    FILE="$(date +"%s").m4a"
+    yt-dlp "$GET" --extract-audio --format "ba[ext=m4a]" -o "$FILE"
+    if ! [ "$?" ]; then
+        echo "something went wrong"
+        exit 1
+    fi
+    ficor --add-file "$FILE" -t "$SET_TAG" --set-info "$GET"
+else
+    CMD="ficor"
+    if [ "$INCLUDE" ]; then
+        CMD="$CMD --include $INCLUDE"
+    fi
+    if [ "$EXCLUDE" ]; then
+        CMD="$CMD --exclude $EXCLUDE"
+    fi
+    mpv $(eval "$CMD")
+fi
