@@ -61,6 +61,7 @@ done
 cd "$DIR"
 
 download () {
+    sleep 1s
     if ! [ "$1" ]; then
         echo "Download requires a url"
         exit 1
